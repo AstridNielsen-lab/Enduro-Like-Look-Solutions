@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'PressStart2P';
+  src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+}
+
+.font-pixel {
+  font-family: 'PressStart2P', monospace;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: black;
+}
