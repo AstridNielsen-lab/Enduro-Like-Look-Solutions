@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useContext } from 'react';
 import { GameContext } from '../context/GameContext';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { useAI } from '../hooks/useAI';
+import GameOver from './GameOver';
 
 const Game: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,6 +24,15 @@ const Game: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
+    if (gameState.speedPenalty) {
+      const timer = setTimeout(() => {
+        dispatch({ type: 'RESET_SPEED_PENALTY' });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.speedPenalty, dispatch]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -30,13 +40,19 @@ const Game: React.FC = () => {
     canvas.height = 600;
 
     const gameLoop = () => {
-      updateGame();
-      updateAICars();
+      if (!gameState.isGameOver) {
+        updateGame();
+        updateAICars();
+      }
       requestAnimationFrame(gameLoop);
     };
 
     requestAnimationFrame(gameLoop);
-  }, [updateGame, updateAICars]);
+  }, [updateGame, updateAICars, gameState.isGameOver]);
+
+  if (gameState.isGameOver) {
+    return <GameOver />;
+  }
 
   return (
     <div className="relative w-full h-full flex justify-center items-center bg-black p-4">
@@ -44,9 +60,12 @@ const Game: React.FC = () => {
         ref={canvasRef}
         className="border-4 border-gray-700 rounded"
       />
-      <div className="absolute top-4 left-4 text-xl">
-        <div>Time: {Math.floor(gameState.timeRemaining)}</div>
+      <div className="absolute top-4 left-4 text-xl space-y-2">
+        <div>Day: {gameState.currentDay}</div>
+        <div>Time: {Math.floor(gameState.elapsedTime)}s</div>
         <div>Score: {gameState.score}</div>
+        <div>Cars: {gameState.carsOvertaken}/{gameState.targetCars}</div>
+        <div>Speed: {Math.floor(gameState.playerSpeed * 10)}km/h</div>
       </div>
     </div>
   );

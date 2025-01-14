@@ -4,26 +4,64 @@ import { GameContext } from '../context/GameContext';
 export const useAI = () => {
   const { gameState, dispatch } = useContext(GameContext);
 
+  const checkCollision = (carX: number, carY: number, playerX: number, playerY: number) => {
+    // Dimensões dos carros
+    const carWidth = 40;
+    const carHeight = 30;
+    
+    // Calcular a área de sobreposição
+    const overlapX = Math.min(carX + carWidth/2, playerX + carWidth/2) - 
+                    Math.max(carX - carWidth/2, playerX - carWidth/2);
+    const overlapY = Math.min(carY + carHeight/2, playerY + carHeight/2) - 
+                    Math.max(carY - carHeight/2, playerY - carHeight/2);
+    
+    // Verificar se há sobreposição positiva em ambos os eixos
+    if (overlapX > 0 && overlapY > 0) {
+      // Calcular a área de sobreposição
+      const overlapArea = overlapX * overlapY;
+      // Calcular a área do carro do jogador
+      const playerArea = carWidth * carHeight;
+      // Calcular a porcentagem de sobreposição
+      const overlapPercentage = overlapArea / playerArea;
+      
+      // Retornar true se a sobreposição for maior que 50%
+      return overlapPercentage > 0.5;
+    }
+    
+    return false;
+  };
+
   const updateAICars = useCallback(() => {
+    const baseSpeed = 0.5 + (gameState.currentDay - 1) * 0.1;
+    const maxCars = 4 + Math.floor(gameState.currentDay / 4);
+    
     // Atualizar carros existentes
     const updatedCars = gameState.aiCars.map(car => {
-      // Mover carros do horizonte em direção ao jogador
-      const newY = car.y + car.speed;
+      const newY = car.y + (car.speed * (gameState.playerSpeed / 10));
       
       if (newY > 600) {
-        // Quando o carro passar da tela, reposicionar no horizonte
+        dispatch({ type: 'CAR_OVERTAKEN' });
+        
+        // Reposicionar o carro no meio da pista
+        const perspectiveScale = 0.3;
+        const roadWidth = 400 * perspectiveScale;
+        const minX = 400 - (roadWidth / 2);
+        const maxX = 400 + (roadWidth / 2);
+        const newX = minX + (Math.random() * (maxX - minX));
+        
         return {
-          x: 400 + (Math.random() * 100 - 50), // Centralizar mais na pista
-          y: 300, // Começar no horizonte
-          speed: 2 + Math.random() * 2 // Velocidade mais consistente
+          x: newX,
+          y: 300,
+          speed: baseSpeed + (Math.random() * 0.4)
         };
       }
       
-      // Calcular a largura da pista baseada na posição Y
-      const perspectiveScale = (600 - newY) / 300;
-      const roadWidth = 400 * perspectiveScale; // Largura da pista diminui com a distância
+      if (checkCollision(car.x, car.y, gameState.playerPosition.x, gameState.playerPosition.y)) {
+        dispatch({ type: 'COLLISION' });
+      }
       
-      // Manter o carro dentro dos limites da pista
+      const perspectiveScale = (600 - newY) / 300;
+      const roadWidth = 400 * perspectiveScale;
       const minX = 400 - (roadWidth / 2);
       const maxX = 400 + (roadWidth / 2);
       const newX = Math.max(minX, Math.min(maxX, car.x));
@@ -35,22 +73,23 @@ export const useAI = () => {
       };
     });
 
-    // Adicionar novos carros periodicamente
-    if (gameState.aiCars.length < 5 && Math.random() < 0.02) {
-      // Posicionar novo carro aleatoriamente dentro da pista no horizonte
-      const roadWidthAtHorizon = 50; // Largura da pista no horizonte
-      const startX = 400 + (Math.random() * roadWidthAtHorizon - roadWidthAtHorizon/2);
+    // Spawn de novos carros
+    if (updatedCars.length < maxCars && Math.random() < 0.02 + (gameState.currentDay * 0.002)) {
+      const perspectiveScale = 0.3;
+      const roadWidth = 400 * perspectiveScale;
+      const minX = 400 - (roadWidth / 2);
+      const maxX = 400 + (roadWidth / 2);
+      const startX = minX + (Math.random() * (maxX - minX));
       
       updatedCars.push({
         x: startX,
-        y: 300, // Horizonte
-        speed: 2 + Math.random() * 2
+        y: 300,
+        speed: baseSpeed + (Math.random() * 0.4)
       });
     }
 
-    // Atualizar estado dos carros
     dispatch({ type: 'UPDATE_AI_CARS', payload: updatedCars });
-  }, [gameState.aiCars, dispatch]);
+  }, [gameState, dispatch]);
 
   return { updateAICars };
 };

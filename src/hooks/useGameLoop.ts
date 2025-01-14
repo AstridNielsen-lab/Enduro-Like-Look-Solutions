@@ -51,23 +51,19 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     const baseHeight = 600;
     const horizonY = baseHeight/2;
     
-    // Calcular escala baseada na distância do horizonte
     const perspectiveScale = Math.max(0.1, (y - horizonY) / (baseHeight - horizonY));
     
-    // Ajustar posição X baseada na perspectiva
     const roadWidth = 400 * perspectiveScale;
     const centerX = 400;
     const relativeX = x - centerX;
     const perspectiveX = centerX + (relativeX * perspectiveScale);
     
     if (isPlayer) {
-      // Carro do jogador
       const carWidth = 30;
       const carHeight = 20;
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(x - carWidth/2, y - carHeight/2, carWidth, carHeight);
     } else {
-      // Carros adversários
       const baseCarWidth = 30;
       const baseCarHeight = 20;
       const carWidth = baseCarWidth * perspectiveScale;
@@ -124,7 +120,6 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawRoad(ctx);
     
-    // Desenhar carros da IA ordenados por distância
     const sortedCars = [...gameState.aiCars].sort((a, b) => b.y - a.y);
     sortedCars.forEach(car => {
       drawCar(ctx, car.x, car.y, '#FF0000', false);
