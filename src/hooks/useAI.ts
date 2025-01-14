@@ -25,11 +25,12 @@ export const useAI = () => {
   };
 
   const updateAICars = useCallback(() => {
-    const baseSpeed = 0.5 + (gameState.currentDay - 1) * 0.1; // Velocidade base mais suave
-    const maxCars = 4 + Math.floor(gameState.currentDay / 4); // Progressão mais gradual
+    const baseSpeed = 3 + (gameState.currentDay - 1) * 0.5;
+    const maxCars = 4 + Math.floor(gameState.currentDay / 4);
     
     const updatedCars = gameState.aiCars.map(car => {
-      const newY = car.y + (car.speed * (gameState.playerSpeed / 6)); // Ajuste na velocidade relativa
+      // Movimento constante independente da velocidade do jogador
+      const newY = car.y + car.speed;
       
       if (newY > 600) {
         dispatch({ type: 'CAR_OVERTAKEN' });
@@ -43,7 +44,7 @@ export const useAI = () => {
         return {
           x: newX,
           y: 300,
-          speed: baseSpeed + (Math.random() * 0.4) // Menos variação na velocidade
+          speed: baseSpeed + (Math.random() * 2) // Maior variação na velocidade
         };
       }
       
@@ -64,7 +65,7 @@ export const useAI = () => {
       };
     });
 
-    if (updatedCars.length < maxCars && Math.random() < 0.02 + (gameState.currentDay * 0.002)) { // Spawn mais equilibrado
+    if (updatedCars.length < maxCars && Math.random() < 0.02 + (gameState.currentDay * 0.002)) {
       const perspectiveScale = 0.3;
       const roadWidth = 400 * perspectiveScale;
       const minX = 400 - (roadWidth / 2);
@@ -74,7 +75,7 @@ export const useAI = () => {
       updatedCars.push({
         x: startX,
         y: 300,
-        speed: baseSpeed + (Math.random() * 0.4)
+        speed: baseSpeed + (Math.random() * 2)
       });
     }
 
