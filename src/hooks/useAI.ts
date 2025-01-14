@@ -5,26 +5,19 @@ export const useAI = () => {
   const { gameState, dispatch } = useContext(GameContext);
 
   const checkCollision = (carX: number, carY: number, playerX: number, playerY: number) => {
-    // Dimensões dos carros
     const carWidth = 40;
     const carHeight = 30;
     
-    // Calcular a área de sobreposição
     const overlapX = Math.min(carX + carWidth/2, playerX + carWidth/2) - 
                     Math.max(carX - carWidth/2, playerX - carWidth/2);
     const overlapY = Math.min(carY + carHeight/2, playerY + carHeight/2) - 
                     Math.max(carY - carHeight/2, playerY - carHeight/2);
     
-    // Verificar se há sobreposição positiva em ambos os eixos
     if (overlapX > 0 && overlapY > 0) {
-      // Calcular a área de sobreposição
       const overlapArea = overlapX * overlapY;
-      // Calcular a área do carro do jogador
       const playerArea = carWidth * carHeight;
-      // Calcular a porcentagem de sobreposição
       const overlapPercentage = overlapArea / playerArea;
       
-      // Retornar true se a sobreposição for maior que 50%
       return overlapPercentage > 0.5;
     }
     
@@ -32,17 +25,15 @@ export const useAI = () => {
   };
 
   const updateAICars = useCallback(() => {
-    const baseSpeed = 0.5 + (gameState.currentDay - 1) * 0.1;
-    const maxCars = 4 + Math.floor(gameState.currentDay / 4);
+    const baseSpeed = 0.5 + (gameState.currentDay - 1) * 0.1; // Velocidade base mais suave
+    const maxCars = 4 + Math.floor(gameState.currentDay / 4); // Progressão mais gradual
     
-    // Atualizar carros existentes
     const updatedCars = gameState.aiCars.map(car => {
-      const newY = car.y + (car.speed * (gameState.playerSpeed / 10));
+      const newY = car.y + (car.speed * (gameState.playerSpeed / 6)); // Ajuste na velocidade relativa
       
       if (newY > 600) {
         dispatch({ type: 'CAR_OVERTAKEN' });
         
-        // Reposicionar o carro no meio da pista
         const perspectiveScale = 0.3;
         const roadWidth = 400 * perspectiveScale;
         const minX = 400 - (roadWidth / 2);
@@ -52,7 +43,7 @@ export const useAI = () => {
         return {
           x: newX,
           y: 300,
-          speed: baseSpeed + (Math.random() * 0.4)
+          speed: baseSpeed + (Math.random() * 0.4) // Menos variação na velocidade
         };
       }
       
@@ -73,8 +64,7 @@ export const useAI = () => {
       };
     });
 
-    // Spawn de novos carros
-    if (updatedCars.length < maxCars && Math.random() < 0.02 + (gameState.currentDay * 0.002)) {
+    if (updatedCars.length < maxCars && Math.random() < 0.02 + (gameState.currentDay * 0.002)) { // Spawn mais equilibrado
       const perspectiveScale = 0.3;
       const roadWidth = 400 * perspectiveScale;
       const minX = 400 - (roadWidth / 2);

@@ -5,7 +5,9 @@ const Instructions: React.FC = () => {
     <div className="w-full md:w-64 bg-gray-900 p-4 overflow-y-auto">
       <h2 className="text-xl text-yellow-400 mb-4">How to Play</h2>
       <ul className="space-y-2 text-sm">
-        <li>→ Use arrow keys to move left and right</li>
+        <li>→ Use Left/Right arrows to steer</li>
+        <li>→ Up arrow to accelerate</li>
+        <li>→ Down arrow to brake</li>
         <li>→ Overtake AI cars to score points</li>
         <li>→ Watch out for weather changes!</li>
         <li>→ Complete the race before time runs out</li>

@@ -15,6 +15,16 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     }
   }, [dispatch]);
 
+  const getRoadBoundaries = useCallback((y: number) => {
+    const baseHeight = 600;
+    const horizonY = baseHeight/2;
+    const perspectiveScale = Math.max(0.1, (y - horizonY) / (baseHeight - horizonY));
+    const roadWidth = 400 * perspectiveScale;
+    const leftBoundary = 400 - (roadWidth / 2);
+    const rightBoundary = 400 + (roadWidth / 2);
+    return { leftBoundary, rightBoundary };
+  }, []);
+
   const drawRoad = useCallback((ctx: CanvasRenderingContext2D) => {
     const width = 800;
     const height = 600;
@@ -48,22 +58,18 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   }, [gameState.weather]);
 
   const drawCar = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, color: string, isPlayer = false) => {
-    const baseHeight = 600;
-    const horizonY = baseHeight/2;
-    
-    const perspectiveScale = Math.max(0.1, (y - horizonY) / (baseHeight - horizonY));
-    
-    const roadWidth = 400 * perspectiveScale;
-    const centerX = 400;
-    const relativeX = x - centerX;
-    const perspectiveX = centerX + (relativeX * perspectiveScale);
+    const { leftBoundary, rightBoundary } = getRoadBoundaries(y);
+    const adjustedX = Math.max(leftBoundary + 20, Math.min(rightBoundary - 20, x));
     
     if (isPlayer) {
       const carWidth = 30;
       const carHeight = 20;
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(x - carWidth/2, y - carHeight/2, carWidth, carHeight);
+      ctx.fillRect(adjustedX - carWidth/2, y - carHeight/2, carWidth, carHeight);
     } else {
+      const baseHeight = 600;
+      const horizonY = baseHeight/2;
+      const perspectiveScale = Math.max(0.1, (y - horizonY) / (baseHeight - horizonY));
       const baseCarWidth = 30;
       const baseCarHeight = 20;
       const carWidth = baseCarWidth * perspectiveScale;
@@ -71,13 +77,13 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       
       ctx.fillStyle = color;
       ctx.fillRect(
-        perspectiveX - carWidth/2,
+        adjustedX - carWidth/2,
         y - carHeight/2,
         carWidth,
         carHeight
       );
     }
-  }, []);
+  }, [getRoadBoundaries]);
 
   const applyWeatherEffects = useCallback((ctx: CanvasRenderingContext2D) => {
     const width = 800;
@@ -125,14 +131,21 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       drawCar(ctx, car.x, car.y, '#FF0000', false);
     });
     
-    drawCar(ctx, gameState.playerPosition.x, gameState.playerPosition.y, '#FFFFFF', true);
+    const { leftBoundary, rightBoundary } = getRoadBoundaries(gameState.playerPosition.y);
+    const adjustedX = Math.max(leftBoundary + 20, Math.min(rightBoundary - 20, gameState.playerPosition.x));
+    
+    if (adjustedX !== gameState.playerPosition.x) {
+      dispatch({ type: 'UPDATE_PLAYER_POSITION', payload: { x: adjustedX, y: gameState.playerPosition.y } });
+    }
+    
+    drawCar(ctx, adjustedX, gameState.playerPosition.y, '#FFFFFF', true);
     applyWeatherEffects(ctx);
 
     if (!gameState.isGameOver) {
       dispatch({ type: 'UPDATE_TIME' });
       updateWeather();
     }
-  }, [gameState, dispatch, drawRoad, drawCar, applyWeatherEffects, updateWeather]);
+  }, [gameState, dispatch, drawRoad, drawCar, applyWeatherEffects, updateWeather, getRoadBoundaries]);
 
   return { updateGame };
 };

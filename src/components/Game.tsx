@@ -12,10 +12,19 @@ const Game: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        dispatch({ type: 'MOVE_LEFT' });
-      } else if (e.key === 'ArrowRight') {
-        dispatch({ type: 'MOVE_RIGHT' });
+      switch (e.key) {
+        case 'ArrowLeft':
+          dispatch({ type: 'MOVE_LEFT' });
+          break;
+        case 'ArrowRight':
+          dispatch({ type: 'MOVE_RIGHT' });
+          break;
+        case 'ArrowUp':
+          dispatch({ type: 'ACCELERATE' });
+          break;
+        case 'ArrowDown':
+          dispatch({ type: 'BRAKE' });
+          break;
       }
     };
 

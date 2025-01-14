@@ -3,6 +3,8 @@ import React, { createContext, useReducer } from 'react';
 export interface GameState {
   playerPosition: { x: number; y: number };
   playerSpeed: number;
+  maxSpeed: number;
+  minSpeed: number;
   score: number;
   elapsedTime: number;
   aiCars: Array<{ x: number; y: number; speed: number }>;
@@ -20,10 +22,13 @@ export interface GameState {
 type GameAction =
   | { type: 'MOVE_LEFT' }
   | { type: 'MOVE_RIGHT' }
+  | { type: 'ACCELERATE' }
+  | { type: 'BRAKE' }
   | { type: 'UPDATE_TIME' }
   | { type: 'UPDATE_SCORE' }
   | { type: 'UPDATE_WEATHER'; payload: GameState['weather'] }
   | { type: 'UPDATE_AI_CARS'; payload: GameState['aiCars'] }
+  | { type: 'UPDATE_PLAYER_POSITION'; payload: { x: number; y: number } }
   | { type: 'COLLISION' }
   | { type: 'RESET_SPEED_PENALTY' }
   | { type: 'CAR_OVERTAKEN' }
@@ -36,7 +41,9 @@ const calculateTargetCars = (day: number) => {
 
 const initialState: GameState = {
   playerPosition: { x: 400, y: 500 },
-  playerSpeed: 4,
+  playerSpeed: 5,
+  maxSpeed: 8,
+  minSpeed: 3,
   score: 0,
   elapsedTime: 0,
   aiCars: [],
@@ -59,29 +66,47 @@ export const GameContext = createContext<{
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'MOVE_LEFT':
-      return {
-        ...state,
-        playerPosition: {
-          ...state.playerPosition,
-          x: Math.max(200, state.playerPosition.x - (state.weather === 'snow' ? 6 : 10)),
-        },
-      };
+    case 'MOVE_RIGHT': {
+      const moveAmount = state.weather === 'snow' ? 8 : 15;
+      const newX = action.type === 'MOVE_LEFT'
+        ? state.playerPosition.x - moveAmount
+        : state.playerPosition.x + moveAmount;
       
-    case 'MOVE_RIGHT':
       return {
         ...state,
         playerPosition: {
           ...state.playerPosition,
-          x: Math.min(600, state.playerPosition.x + (state.weather === 'snow' ? 6 : 10)),
+          x: newX,
         },
       };
+    }
+
+    case 'UPDATE_PLAYER_POSITION':
+      return {
+        ...state,
+        playerPosition: action.payload,
+      };
+
+    case 'ACCELERATE':
+      if (state.playerSpeed < state.maxSpeed) {
+        return {
+          ...state,
+          playerSpeed: Math.min(state.maxSpeed, state.playerSpeed + 0.5)
+        };
+      }
+      return state;
+
+    case 'BRAKE':
+      if (state.playerSpeed > state.minSpeed) {
+        return {
+          ...state,
+          playerSpeed: Math.max(state.minSpeed, state.playerSpeed - 0.5)
+        };
+      }
+      return state;
       
     case 'UPDATE_TIME':
       const newTime = state.elapsedTime + 1/60;
-      
-      if (Math.floor(newTime) % 20 === 0 && state.playerSpeed < 8) {
-        state.playerSpeed += 0.3;
-      }
       
       if (state.carsOvertaken >= state.targetCars) {
         return {
@@ -92,7 +117,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           carsOvertaken: 0,
           weather: 'clear',
           bonusPoints: Math.floor((state.carsOvertaken - state.targetCars) / 15) * 50,
-          playerSpeed: Math.min(8, state.playerSpeed + 0.5),
+          playerSpeed: Math.min(state.maxSpeed, state.playerSpeed + 0.5),
         };
       }
       
@@ -113,22 +138,21 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         consecutiveCollisions: newConsecutiveCollisions,
         lastCollisionTime: now,
         speedPenalty: true,
-        playerSpeed: Math.max(3, state.playerSpeed * 0.95),
+        playerSpeed: Math.max(state.minSpeed, state.playerSpeed * 0.85),
       };
     
     case 'RESET_SPEED_PENALTY':
       return {
         ...state,
         speedPenalty: false,
-        playerSpeed: Math.min(8, state.playerSpeed + 0.4),
+        playerSpeed: Math.min(state.maxSpeed, state.playerSpeed + 0.3),
       };
       
     case 'CAR_OVERTAKEN':
-      const newScore = state.score + 3;
       return {
         ...state,
         carsOvertaken: state.carsOvertaken + 1,
-        score: newScore,
+        score: state.score + 3,
       };
       
     case 'UPDATE_WEATHER':
