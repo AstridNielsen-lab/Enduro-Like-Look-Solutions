@@ -57,33 +57,77 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     ctx.stroke();
   }, [gameState.weather]);
 
+  const drawDetailedCar = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, color: string, isPlayer: boolean) => {
+    // Corpo principal do carro
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x - width/2, y - height/2, width, height, 3);
+    ctx.fill();
+
+    // Teto do carro (mais estreito que o corpo)
+    const roofWidth = width * 0.6;
+    const roofHeight = height * 0.5;
+    const roofX = x - roofWidth/2;
+    const roofY = y - height/2 + (height * 0.1);
+    ctx.fillStyle = isPlayer ? '#CCCCCC' : '#880000';
+    ctx.beginPath();
+    ctx.roundRect(roofX, roofY, roofWidth, roofHeight, 2);
+    ctx.fill();
+
+    // Para-brisa
+    ctx.fillStyle = '#000033';
+    const windshieldWidth = roofWidth * 0.8;
+    const windshieldHeight = roofHeight * 0.4;
+    const windshieldX = x - windshieldWidth/2;
+    const windshieldY = roofY + (roofHeight * 0.1);
+    ctx.fillRect(windshieldX, windshieldY, windshieldWidth, windshieldHeight);
+
+    // Faróis traseiros
+    const lightSize = width * 0.1;
+    ctx.fillStyle = '#FF0000';
+    // Farol esquerdo
+    ctx.beginPath();
+    ctx.arc(x - width/3, y - height/2 + lightSize, lightSize/2, 0, Math.PI * 2);
+    ctx.fill();
+    // Farol direito
+    ctx.beginPath();
+    ctx.arc(x + width/3, y - height/2 + lightSize, lightSize/2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rodas
+    const wheelWidth = width * 0.15;
+    const wheelHeight = height * 0.25;
+    ctx.fillStyle = '#000000';
+    // Roda traseira esquerda
+    ctx.fillRect(x - width/2 - wheelWidth/4, y - height/3, wheelWidth, wheelHeight);
+    // Roda traseira direita
+    ctx.fillRect(x + width/2 - wheelWidth*3/4, y - height/3, wheelWidth, wheelHeight);
+    // Roda dianteira esquerda
+    ctx.fillRect(x - width/2 - wheelWidth/4, y + height/4, wheelWidth, wheelHeight);
+    // Roda dianteira direita
+    ctx.fillRect(x + width/2 - wheelWidth*3/4, y + height/4, wheelWidth, wheelHeight);
+  }, []);
+
   const drawCar = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, color: string, isPlayer = false) => {
     const { leftBoundary, rightBoundary } = getRoadBoundaries(y);
     const adjustedX = Math.max(leftBoundary + 20, Math.min(rightBoundary - 20, x));
     
     if (isPlayer) {
       const carWidth = 30;
-      const carHeight = 20;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(adjustedX - carWidth/2, y - carHeight/2, carWidth, carHeight);
+      const carHeight = 50;
+      drawDetailedCar(ctx, adjustedX, y, carWidth, carHeight, '#3366CC', true);
     } else {
       const baseHeight = 600;
       const horizonY = baseHeight/2;
       const perspectiveScale = Math.max(0.1, (y - horizonY) / (baseHeight - horizonY));
       const baseCarWidth = 30;
-      const baseCarHeight = 20;
+      const baseCarHeight = 50;
       const carWidth = baseCarWidth * perspectiveScale;
       const carHeight = baseCarHeight * perspectiveScale;
       
-      ctx.fillStyle = color;
-      ctx.fillRect(
-        adjustedX - carWidth/2,
-        y - carHeight/2,
-        carWidth,
-        carHeight
-      );
+      drawDetailedCar(ctx, adjustedX, y, carWidth, carHeight, '#CC3333', false);
     }
-  }, [getRoadBoundaries]);
+  }, [getRoadBoundaries, drawDetailedCar]);
 
   const applyWeatherEffects = useCallback((ctx: CanvasRenderingContext2D) => {
     const width = 800;
