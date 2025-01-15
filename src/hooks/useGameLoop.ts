@@ -108,7 +108,7 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     ctx.fillRect(x + width/2 - wheelWidth*3/4, y + height/4, wheelWidth, wheelHeight);
   }, []);
 
-  const drawCar = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, color: string, isPlayer = false) => {
+  const drawCar = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, isPlayer = false) => {
     const { leftBoundary, rightBoundary } = getRoadBoundaries(y);
     const adjustedX = Math.max(leftBoundary + 20, Math.min(rightBoundary - 20, x));
     
@@ -134,7 +134,7 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     const height = 600;
     
     switch (gameState.weather) {
-      case 'fog':
+      case 'fog': {
         const gradient = ctx.createLinearGradient(0, 0, 0, height);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
         gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
@@ -142,6 +142,7 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
         break;
+      }
         
       case 'snow':
         for (let i = 0; i < 150; i++) {
@@ -172,7 +173,7 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     
     const sortedCars = [...gameState.aiCars].sort((a, b) => b.y - a.y);
     sortedCars.forEach(car => {
-      drawCar(ctx, car.x, car.y, '#FF0000', false);
+      drawCar(ctx, car.x, car.y, false);
     });
     
     const { leftBoundary, rightBoundary } = getRoadBoundaries(gameState.playerPosition.y);
@@ -182,14 +183,14 @@ export const useGameLoop = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       dispatch({ type: 'UPDATE_PLAYER_POSITION', payload: { x: adjustedX, y: gameState.playerPosition.y } });
     }
     
-    drawCar(ctx, adjustedX, gameState.playerPosition.y, '#FFFFFF', true);
+    drawCar(ctx, adjustedX, gameState.playerPosition.y, true);
     applyWeatherEffects(ctx);
 
     if (!gameState.isGameOver) {
       dispatch({ type: 'UPDATE_TIME' });
       updateWeather();
     }
-  }, [gameState, dispatch, drawRoad, drawCar, applyWeatherEffects, updateWeather, getRoadBoundaries]);
+  }, [gameState, dispatch, drawRoad, drawCar, applyWeatherEffects, updateWeather, getRoadBoundaries, canvasRef]);
 
   return { updateGame };
 };

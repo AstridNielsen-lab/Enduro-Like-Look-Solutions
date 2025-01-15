@@ -24,57 +24,27 @@ export const useAI = () => {
     return false;
   };
 
-  const getLanePosition = (lane: number, y: number) => {
-    const perspectiveScale = (600 - y) / 300;
-    const roadWidth = 400 * perspectiveScale;
-    const laneWidth = roadWidth / 3;
-    const roadLeft = 400 - (roadWidth / 2);
-    return roadLeft + (lane * laneWidth) + (laneWidth / 2);
-  };
-
   const updateAICars = useCallback(() => {
-    const baseSpeed = 0.5 + (gameState.currentDay - 1) * 0.1;
-    const maxCars = 5; // Limit maximum cars on screen
-    const minDistanceBetweenCars = 150; // Minimum vertical distance between cars
+    const baseSpeed = 3 + (gameState.currentDay - 1) * 0.5;
+    const maxCars = 4 + Math.floor(gameState.currentDay / 4);
     
     const updatedCars = gameState.aiCars.map(car => {
-      const newY = car.y + (car.speed * (gameState.playerSpeed / 6));
+      // Movimento constante independente da velocidade do jogador
+      const newY = car.y + car.speed;
       
       if (newY > 600) {
         dispatch({ type: 'CAR_OVERTAKEN' });
         
-        // Find a free lane and position for the new car
-        const existingCarPositions = gameState.aiCars
-          .filter(c => c.y < 350)
-          .map(c => ({ y: c.y, lane: c.lane }));
-        
-        let newLane = Math.floor(Math.random() * 3);
-        let attempts = 0;
-        let validPosition = false;
-        
-        while (!validPosition && attempts < 10) {
-          validPosition = true;
-          for (const pos of existingCarPositions) {
-            if (pos.lane === newLane && Math.abs(300 - pos.y) < minDistanceBetweenCars) {
-              validPosition = false;
-              break;
-            }
-          }
-          if (!validPosition) {
-            newLane = (newLane + 1) % 3;
-            attempts++;
-          }
-        }
-        
-        if (!validPosition) {
-          return null; // Skip spawning if no valid position found
-        }
+        const perspectiveScale = 0.3;
+        const roadWidth = 400 * perspectiveScale;
+        const minX = 400 - (roadWidth / 2);
+        const maxX = 400 + (roadWidth / 2);
+        const newX = minX + (Math.random() * (maxX - minX));
         
         return {
-          x: getLanePosition(newLane, 300),
+          x: newX,
           y: 300,
-          speed: baseSpeed + (Math.random() * 0.2),
-          lane: newLane
+          speed: baseSpeed + (Math.random() * 2) // Maior variação na velocidade
         };
       }
       
@@ -82,39 +52,31 @@ export const useAI = () => {
         dispatch({ type: 'COLLISION' });
       }
       
-      const newX = getLanePosition(car.lane, newY);
+      const perspectiveScale = (600 - newY) / 300;
+      const roadWidth = 400 * perspectiveScale;
+      const minX = 400 - (roadWidth / 2);
+      const maxX = 400 + (roadWidth / 2);
+      const newX = Math.max(minX, Math.min(maxX, car.x));
       
       return {
         ...car,
         x: newX,
         y: newY
       };
-    }).filter(car => car !== null) as Array<{ x: number; y: number; speed: number; lane: number }>;
+    });
 
-    // Only spawn new car if there's enough space
-    if (updatedCars.length < maxCars && Math.random() < 0.02) {
-      const existingCarPositions = updatedCars
-        .filter(c => c.y < 350)
-        .map(c => ({ y: c.y, lane: c.lane }));
+    if (updatedCars.length < maxCars && Math.random() < 0.02 + (gameState.currentDay * 0.002)) {
+      const perspectiveScale = 0.3;
+      const roadWidth = 400 * perspectiveScale;
+      const minX = 400 - (roadWidth / 2);
+      const maxX = 400 + (roadWidth / 2);
+      const startX = minX + (Math.random() * (maxX - minX));
       
-      let newLane = Math.floor(Math.random() * 3);
-      let validPosition = true;
-      
-      for (const pos of existingCarPositions) {
-        if (pos.lane === newLane && Math.abs(300 - pos.y) < minDistanceBetweenCars) {
-          validPosition = false;
-          break;
-        }
-      }
-      
-      if (validPosition) {
-        updatedCars.push({
-          x: getLanePosition(newLane, 300),
-          y: 300,
-          speed: baseSpeed + (Math.random() * 0.2),
-          lane: newLane
-        });
-      }
+      updatedCars.push({
+        x: startX,
+        y: 300,
+        speed: baseSpeed + (Math.random() * 2)
+      });
     }
 
     dispatch({ type: 'UPDATE_AI_CARS', payload: updatedCars });

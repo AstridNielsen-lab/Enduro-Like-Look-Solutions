@@ -7,8 +7,8 @@ export interface GameState {
   minSpeed: number;
   score: number;
   elapsedTime: number;
-  aiCars: Array<{ x: number; y: number; speed: number; lane: number }>;
-  weather: 'clear' | 'night';
+  aiCars: Array<{ x: number; y: number; speed: number }>;
+  weather: 'clear' | 'fog' | 'snow' | 'night';
   isGameOver: boolean;
   currentDay: number;
   carsOvertaken: number;
@@ -35,8 +35,8 @@ type GameAction =
   | { type: 'GAME_OVER' }
   | { type: 'RESET_GAME' };
 
-const calculateTargetCars = () => {
-  return 200; // Fixed target of 200 cars per day
+const calculateTargetCars = (day: number) => {
+  return 30 + ((day - 1) * 15);
 };
 
 const initialState: GameState = {
@@ -51,7 +51,7 @@ const initialState: GameState = {
   isGameOver: false,
   currentDay: 1,
   carsOvertaken: 0,
-  targetCars: 200,
+  targetCars: 30,
   consecutiveCollisions: 0,
   lastCollisionTime: 0,
   bonusPoints: 0,
@@ -67,7 +67,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'MOVE_LEFT':
     case 'MOVE_RIGHT': {
-      const moveAmount = 15;
+      const moveAmount = state.weather === 'snow' ? 8 : 15;
       const newX = action.type === 'MOVE_LEFT'
         ? state.playerPosition.x - moveAmount
         : state.playerPosition.x + moveAmount;
@@ -109,15 +109,14 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       const newTime = state.elapsedTime + 1/60;
       
       if (state.carsOvertaken >= state.targetCars) {
-        const newWeather = state.weather === 'clear' ? 'night' : 'clear';
         return {
           ...state,
           elapsedTime: newTime,
           currentDay: state.currentDay + 1,
-          targetCars: calculateTargetCars(),
+          targetCars: calculateTargetCars(state.currentDay + 1),
           carsOvertaken: 0,
-          weather: newWeather,
-          bonusPoints: Math.floor((state.carsOvertaken - state.targetCars) / 20) * 50,
+          weather: 'clear',
+          bonusPoints: Math.floor((state.carsOvertaken - state.targetCars) / 15) * 50,
           playerSpeed: Math.min(state.maxSpeed, state.playerSpeed + 0.5),
         };
       }
